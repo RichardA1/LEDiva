@@ -268,12 +268,18 @@ case 1: // Solid bright
           FadeG = G;
           FadeB = B;
         } else {
-          FadeR =(strip.getPixelColor(i) >> 16);
+          FadeR = (strip.getPixelColor(i) >> 16) & 0xFF;
           delay(1);
-          FadeG =(strip.getPixelColor(i) >> 8);
+          FadeG = (strip.getPixelColor(i) >> 8) & 0xFF;
           delay(1);
-          FadeB =(strip.getPixelColor(i));
+          FadeB = strip.getPixelColor(i) & 0xFF;
           delay(1); 
+//          // Return color, dimmed by 75% (used by scanner)
+//          uint32_t DimColor(uint32_t color)
+//          {
+//              uint32_t dimColor = Color(Red(color) >> 1, Green(color) >> 1, Blue(color) >> 1);
+//              return dimColor;
+//          }
           FadeR = FadeR-(R/30);
           if(FadeR < 0) {
             FadeR = 0;
@@ -365,6 +371,27 @@ uint32_t Wheel(byte WheelPos) {
    return strip.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
   }
 }
+
+//void GetRGB(uint32_t g){
+//    // Returns the Red component of a 32-bit color
+//    uint8_t Red(g);
+//    {
+//        return (g >> 16) & 0xFF;
+//    }
+// 
+//    // Returns the Green component of a 32-bit color
+//    uint8_t Green(g);
+//    {
+//        return (g >> 8) & 0xFF;
+//    }
+// 
+//    // Returns the Blue component of a 32-bit color
+//    uint8_t Blue(g);
+//    {
+//        return g & 0xFF;
+//    }
+//  
+//}
 
 // Set the number of LEDs that will be used
 void LEDSsetup(int l) {
