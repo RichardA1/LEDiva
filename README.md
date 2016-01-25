@@ -1,6 +1,6 @@
 # LEDiva
 This is the program for an LED driver I am making. 
-Select a Color:
+<p>Select a Color:
 <ol>
 	<li>Press and hold the Color button.</li>
 	<li>The LEDs will all turn on and become dim.</li>
@@ -34,3 +34,4 @@ Change the number of LEDs used:
 	<li>Once finished, release all buttons and wait for two seconds.</li>
 	<li>The LEDiva will save your selection and start up normally.</li>
 </ol>
+</p>
