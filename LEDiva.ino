@@ -20,7 +20,7 @@
 #define Sensor 1
 #define C_BUTTON 4
 #define P_BUTTON 3
-#define Pixels 60
+#define Pixels 100
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(Pixels, PIN, NEO_GRB + NEO_KHZ800);
 
@@ -49,8 +49,6 @@ void setup(){
 
   pinMode(C_BUTTON, INPUT_PULLUP);
   pinMode(P_BUTTON, INPUT_PULLUP);
-  strip.begin();
-  strip.show(); // Initialize all pixels to 'off'
 
   LEDs = EEPROM.read(0);
   Lux = EEPROM.read(1);
@@ -66,13 +64,17 @@ void setup(){
     P_MODE = 7;
     EEPROM.update(3, P_MODE);
   }
+    strip.begin();
+  strip.setBrightness(Lux);
+    strip.show(); // Initialize all pixels to 'off'
+    
     if (!digitalRead(P_BUTTON)){
     colorChange(strip.Color(50, 50, 50));
     delay(100);
     LEDSsetup(1);
   }
     if (!digitalRead(C_BUTTON)){
-    colorChange(strip.Color(50, 50, 50));
+    colorChange(strip.Color(255, 255, 255));
     delay(100);
     LUXsetup(1);
   }
@@ -91,62 +93,7 @@ void loop(){
   patternMode(P_MODE);
   STrigger = 0;
 }
-void ColorSelect(){
-  while (digitalRead(P_BUTTON) == LOW) {
-    colorChange(strip.Color(R/4, G/4, B/4));
-    while (digitalRead(C_BUTTON) == LOW) {
-      delay(500);
-      C_MODE += 1;
-      if (C_MODE > Cn) {
-        C_MODE = 1; 
-      }
-      colorMode(C_MODE);
-      strip.setBrightness(Lux/2);
-      colorChange(strip.Color(R, G, B));
-      strip.setBrightness(Lux);
-    } 
-  }
-  EEPROM.update(2, C_MODE);
-} 
-void PatternSelect(){
-  while(digitalRead(C_BUTTON) == LOW) {
-    while(digitalRead(P_BUTTON) == LOW) {
-      delay(500);
-      P_MODE += 1;
-      if (P_MODE > Pn) {
-        P_MODE = 1; 
-      }
-      patternMode(P_MODE);
-    }
-  }
-  EEPROM.update(3, P_MODE);
-} 
-// Fill the dots one after the other with a color
-void colorChange(uint32_t c) {
-  for(uint16_t i=0; i<LEDs; i++) {
-      strip.setPixelColor(i, c);
-  }
-  strip.show();
-}
 
-// Fill the dots one after the other with a color
-void colorWipe(uint32_t c) {
-  for(uint16_t i=0; i<LEDs; i++) {
-      strip.setPixelColor(i, c);
-      strip.show();
-      
-      delay(50);
-  }
-}
-
-// Fill the dots one after the other with a color
-void Sparkle(uint32_t c) {
-  for(uint16_t i=0; i<LEDs; i++) {
-      strip.setPixelColor(i, c);
-      strip.show();
-      delay(50);
-  }
-}
 
 void colorMode(uint32_t m) {
   switch (m) {
@@ -274,12 +221,6 @@ case 1: // Solid bright
           delay(1);
           FadeB = strip.getPixelColor(i) & 0xFF;
           delay(1); 
-//          // Return color, dimmed by 75% (used by scanner)
-//          uint32_t DimColor(uint32_t color)
-//          {
-//              uint32_t dimColor = Color(Red(color) >> 1, Green(color) >> 1, Blue(color) >> 1);
-//              return dimColor;
-//          }
           FadeR = FadeR-(R/30);
           if(FadeR < 0) {
             FadeR = 0;
@@ -313,17 +254,13 @@ case 1: // Solid bright
       break;
   case 9: // Color Pulsate
       wait = 100;
-      if (STrigger){
-        C_MODE += 1;
-        if (C_MODE > 10)C_MODE = 1;
-        colorMode(C_MODE);
-        wait = 20;
-      }
+      STrigColor();
       for(i=0; i<7; i++) {
         strip.setBrightness(0+((Lux/7)*i));
         colorChange(strip.Color(R, G, B));
         delay(wait);
       }
+      STrigColor();
       for(i=0; i<7; i++) {
         strip.setBrightness(Lux-((Lux/7)*i));
         colorChange(strip.Color(R, G, B));
@@ -357,6 +294,64 @@ case 1: // Solid bright
   }
 }
 
+void ColorSelect(){
+  while (digitalRead(C_BUTTON) == LOW) {
+    colorChange(strip.Color(R/4, G/4, B/4));
+    while (digitalRead(P_BUTTON) == LOW) {
+      delay(500);
+      C_MODE += 1;
+      if (C_MODE > Cn) {
+        C_MODE = 1; 
+      }
+      colorMode(C_MODE);
+      strip.setBrightness(Lux/2);
+      colorChange(strip.Color(R, G, B));
+      strip.setBrightness(Lux);
+    } 
+  }
+  EEPROM.update(2, C_MODE);
+} 
+void PatternSelect(){
+  while(digitalRead(P_BUTTON) == LOW) {
+       strip.setBrightness(Lux);
+    while(digitalRead(C_BUTTON) == LOW) {
+      delay(500);
+      P_MODE += 1;
+      if (P_MODE > Pn) {
+        P_MODE = 1; 
+      }
+      patternMode(P_MODE);
+    }
+  }
+  EEPROM.update(3, P_MODE);
+} 
+// Fill the dots one after the other with a color
+void colorChange(uint32_t c) {
+  for(uint16_t i=0; i<LEDs; i++) {
+      strip.setPixelColor(i, c);
+  }
+  strip.show();
+}
+
+// Fill the dots one after the other with a color
+void colorWipe(uint32_t c) {
+  for(uint16_t i=0; i<LEDs; i++) {
+      strip.setPixelColor(i, c);
+      strip.show();
+      
+      delay(50);
+  }
+}
+
+// Fill the dots one after the other with a color
+void Sparkle(uint32_t c) {
+  for(uint16_t i=0; i<LEDs; i++) {
+      strip.setPixelColor(i, c);
+      strip.show();
+      delay(50);
+  }
+}
+
 // Input a value 0 to 255 to get a color value.
 // The colours are a transition r - g - b - back to r.
 uint32_t Wheel(byte WheelPos) {
@@ -372,27 +367,14 @@ uint32_t Wheel(byte WheelPos) {
   }
 }
 
-//void GetRGB(uint32_t g){
-//    // Returns the Red component of a 32-bit color
-//    uint8_t Red(g);
-//    {
-//        return (g >> 16) & 0xFF;
-//    }
-// 
-//    // Returns the Green component of a 32-bit color
-//    uint8_t Green(g);
-//    {
-//        return (g >> 8) & 0xFF;
-//    }
-// 
-//    // Returns the Blue component of a 32-bit color
-//    uint8_t Blue(g);
-//    {
-//        return g & 0xFF;
-//    }
-//  
-//}
-
+void STrigColor(){
+     if (STrigger){
+        C_MODE += 1;
+        if (C_MODE > 10)C_MODE = 1;
+        colorMode(C_MODE);
+        wait = 20;
+      }
+}
 // Set the number of LEDs that will be used
 void LEDSsetup(int l) {
   uint16_t t=0;
@@ -416,7 +398,7 @@ void LEDSsetup(int l) {
       }
     }
     strip.show();
-    if (t>1000){
+    if (t>2000){
       EEPROM.update(0, LEDs);
       l=0;
     }
@@ -428,19 +410,19 @@ void LUXsetup(int l) {
   uint16_t t=0;
   while(l){
     t++;
-    if (digitalRead(C_BUTTON) == LOW && Lux < 240) {
+    if (digitalRead(P_BUTTON) == LOW && Lux < 240) {
         delay(250);
         Lux += 15;
         t=0;
     } 
-    if (digitalRead(P_BUTTON) == LOW && Lux > 15) {
+    if (digitalRead(C_BUTTON) == LOW && Lux > 15) {
       delay(250);
       Lux -= 15;
       t=0;
     } 
     strip.setBrightness(Lux);
     strip.show();
-    if (t>1000){
+    if (t>2000){
       EEPROM.update(1, Lux);
       l=0;
     }
