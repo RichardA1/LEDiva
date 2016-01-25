@@ -1,13 +1,14 @@
 # LEDiva
 This is the program for an LED driver I am making. 
-<p>Select a Color:
+<p>
+<b>Select a Color:</b>
 <ol>
 	<li>Press and hold the Color button.</li>
 	<li>The LEDs will all turn on and become dim.</li>
 	<li>Press the Pattern button to cycle through the colors.</li>
 	<li>Release the Color button to lock in your selection.</li>
 </ol>
-Select a Pattern:
+<b>Select a Pattern:</b>
 <ol>
 	<li>Press and hold the Pattern button.</li>
 	<li>Wait until the LEDs finish the current animation pattern and remain static.</li>
@@ -16,7 +17,7 @@ Note: Each pattern will play through one cycle. Wait until the LEDs stop changi
 </li>
 	<li>Release the Pattern button to lock in your selection.</li>
 </ol>
-Change the max brightness of the LEDs:
+<b>Change the max brightness of the LEDs:</b>
 <ol>
 	<li>Press and hold the Color button, then turn the LEDiva on.</li>
 	<li>The LEDs will turn white.</li>
@@ -25,7 +26,7 @@ Change the max brightness of the LEDs:
 	<li>Once finished, release all buttons and wait for two seconds.</li>
 	<li>The LEDiva will save your selection and start up normally.</li>
 </ol>
-Change the number of LEDs used:
+<b>Change the number of LEDs used:</b>
 <ol>
 	<li>Press and hold the Pattern button, then turn the LEDiva on.</li>
 	<li>The LEDs will turn white.</li>
