@@ -1,38 +1,4 @@
-/*Color and Patern Mode selector for NeoPixels
-Uses C_BUTTON to sycle through 9 colors and P_BUTTON to select any of the 8 patern sequanses.
-64 total options are avalable
-code by Richard Albritton
-
-Select a Color:
-Press and hold the Color button.
-The LEDs will all turn on and become dim.
-Press the Pattern button to cycle through the colors.
-Release the Color button to lock in your selection.
-
-Select a Pattern:
-Press and hold the Pattern button.
-Wait until the LEDs finish the current animation pattern and remain static.
-Press the Color button to cycle through the patterns. Note: Each pattern will play through one cycle. Wait until the LEDs stop changing before advancing to the next patten.
-Release the Pattern button to lock in your selection.
-
-Change the max brightness of the LEDs:
-Press and hold the Color button, then turn the LEDiva on.
-The LEDs will turn white.
-Keep holding the Color button to reduce the brightness of the LEDs.
-Press the Pattern button to increase the brightness of the LEDs.
-Once finished, release all buttons and wait for two seconds.
-The LEDiva will save your selection and start up normally.
-
-Change the number of LEDs used:
-Press and hold the Pattern button, then turn the LEDiva on.
-The LEDs will turn white.
-Keep holding the Pattern button to reduce the number of LEDs
-Press the Color button to increase the number of LEDs (up to 80).
-Once finished, release all buttons and wait for two seconds.
-The LEDiva will save your selection and start up normally.
- */
- 
-#include <Adafruit_NeoPixel.h>
+#include <LEDiva_NeoPixel.h>
 #include <avr/power.h>
 #include <EEPROM.h>
 
@@ -51,12 +17,12 @@ The LEDiva will save your selection and start up normally.
 #define P_BUTTON 3
 #define Pixels 80
 
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(Pixels, PIN, NEO_GRB + NEO_KHZ800);
+LEDiva_NeoPixel strip = LEDiva_NeoPixel(Pixels, PIN, NEO_GRB + NEO_KHZ800);
 
 int C_MODE; // Current color mode.
 int P_MODE; // Current pattern mode.
 int Cn = 9; //The number of Color options.
-int Pn = 10; //The number of Pattern options.
+int Pn = 13; //The number of Pattern options.
 int STrigger = 0; // This tells us if the sensor interupt was triggered.
 int LEDs;
 int R;
@@ -67,7 +33,11 @@ int FadeR;
 int FadeG;
 int FadeB;
 long Lux;
+int LuxD;
 int wait = 10;
+int waitRel = 0;
+int ran;
+int jump = 0;
 
 void setup(){
      // This is for Trinket 5V 16MHz, you can remove these three lines if you are not using a Trinket
@@ -76,26 +46,34 @@ void setup(){
 #endif
   // End of trinket special code
 
+ strip.begin();
+  
   pinMode(C_BUTTON, INPUT_PULLUP);
   pinMode(P_BUTTON, INPUT_PULLUP);
-
 
   LEDs = EEPROM.read(0);
   Lux = EEPROM.read(1);
   C_MODE = EEPROM.read(2);
   P_MODE = EEPROM.read(3);
   if(LEDs<0 || LEDs>Pixels){
-    LEDs = 5;
+    colorChange(strip.Color(50, 0, 0));
+    delay(500);
+    colorChange(strip.Color(0, 50, 0));
+    delay(500);
+    colorChange(strip.Color(0, 0, 50));
+    delay(500);
+    colorChange(strip.Color(0, 0, 0));
+    LEDs = 8;
     EEPROM.update(0, LEDs);
-    Lux = 135;
+    Lux = 255;
     EEPROM.update(1, Lux);
-    C_MODE = 1;
+    C_MODE = 4;
     EEPROM.update(2, C_MODE);
-    P_MODE = 7;
+    P_MODE = 5;
     EEPROM.update(3, P_MODE);
   }
 
-    strip.begin();
+    
     strip.setBrightness(Lux);
     colorChange(strip.Color(0, 0, 0));
     strip.show(); // Initialize all pixels to 'off'
@@ -117,254 +95,255 @@ void setup(){
 
     colorMode(C_MODE);
   colorChange(strip.Color(R, G, B));
+  LuxD = 255 - Lux;
+
+        FadeR = R;
+      FadeG = G;
+      FadeB = B;
 }
 
 void loop(){
   ColorSelect(); 
   PatternSelect();
   patternMode(P_MODE);
-  STrigger = 0;
+
 }
-void ColorSelect(){
-  while (digitalRead(C_BUTTON) == LOW) {
-    colorChange(strip.Color(R/4, G/4, B/4));
-    while (digitalRead(P_BUTTON) == LOW) {
-      delay(500);
-      C_MODE += 1;
-      if (C_MODE > Cn) {
-        C_MODE = 1; 
-      }
-      colorMode(C_MODE);
-      strip.setBrightness(Lux/2);
-      colorChange(strip.Color(R, G, B));
-      strip.setBrightness(Lux);
-    } 
-  }
-  EEPROM.update(2, C_MODE);
-} 
-void PatternSelect(){
-  while(digitalRead(P_BUTTON) == LOW) {
-    strip.setBrightness(Lux);
-    while(digitalRead(C_BUTTON) == LOW) {
-      strip.setBrightness(Lux);
-      delay(500);
-      P_MODE += 1;
-      if (P_MODE > Pn) {
-        P_MODE = 1; 
-      }
-      patternMode(P_MODE);
-    }
-  }
-  EEPROM.update(3, P_MODE);
-} 
+
 
 void colorMode(uint32_t m) {
   switch (m) {
     case 1: // Red
       R = 255;
       G = 0;
-      B = 1;
+      B = 0;
       break;
     case 2: // Orange
-      R = 170;
-      G = 85;
-      B = 1;
+      R = 255;
+      G = 128;
+      B = 0;
       break;
     case 3: // Yellow
-      R = 128;
-      G = 128;
-      B = 1;
+      R = 255;
+      G = 255;
+      B = 0;
       break;
     case 4: // Green
       R = 0;
       G = 255;
-      B = 1;
+      B = 0;
       break;
     case 5: // Sky Blue
       R = 0;
-      G = 128;
-      B = 128;
+      G = 255;
+      B = 255;
       break;
     case 6: // Blue
       R = 0;
       G = 0;
-      B = 100;
-      break;
+      B = 255;
+      break;  
     case 7: // Violet
-      R = 85;
+      R = 80;
       G = 0;
-      B = 170;
+      B = 200;
       break;
     case 8: // Pink
-      R = 128;
+      R = 255;
       G = 0;
-      B = 128;
+      B = 255;
       break; 
     case 9: // White
-      R = 85;
-      G = 85;
-      B = 85;
-      break;     
+      R = 255;
+      G = 255;
+      B = 255;
+      break; 
   }
 }
 void patternMode(uint32_t p) {
-    strip.setBrightness(Lux);
   switch (p) {
-case 1: // Solid bright
-      colorChange(strip.Color(R, G, B));
-      break;
-    case 2: // Solid dim
-      colorChange(strip.Color(R/2, G/2, B/2));
-      break;
-    case 3: // Slow strobe
-      wait = 800;
-      colorChange(strip.Color(R, G, B));
-      delay(wait);
-      colorChange(strip.Color(0, 0, 0));
-      delay(wait);
-      break;
-    case 4: // Fast strobe
-      wait = 300;
-      colorChange(strip.Color(R, G, B));
-      delay(wait);
-      colorChange(strip.Color(0, 0, 0));
-      delay(wait);
-      break;
-    case 5: // Pulsate
-      wait = 100;
-      uint16_t i;
-      for(i=0; i<7; i++) {
-        if (STrigger) wait = 20;
-        strip.setBrightness(0+((Lux/7)*i));
+    case 1: // Solid bright
         colorChange(strip.Color(R, G, B));
-        delay(wait);
-      }
-      for(i=0; i<7; i++) {
-        if (STrigger) wait = 20;
-        strip.setBrightness(Lux-((Lux/7)*i));
-        colorChange(strip.Color(R, G, B));
-        delay(wait);
-      }
-      break;
-    case 6: // Tracer
-    if(!digitalRead(P_BUTTON)){
-      wait = 5;
-    } else {
-      wait = 50;
-    }
-    for(uint16_t i=0; i<LEDs; i++) {
-      if (STrigger) wait = 10;
-       strip.setPixelColor(i, strip.Color(0, 0, 0));
-       strip.show();
-       PatternSelect();
-       //if (P_MODE != p) break;
-       delay(wait);
-    }
-    for(uint16_t i=0; i<LEDs; i++) {
-      if (STrigger) wait = 10;
-      strip.setPixelColor(i, strip.Color(R, G, B));
-      strip.show();
-      PatternSelect();
-      //if (P_MODE != p) break;
-      delay(wait);
-    } 
-      break;
-    case 7: // Sparkle
-      Twinkle = 30;
-      for(uint16_t i=0; i<LEDs; i++) {
-        if (STrigger) Twinkle = 2970;
-        if (random(3000) < Twinkle) {
-          FadeR = R;
-          FadeG = G;
-          FadeB = B;
-        } else {
-          FadeR = (strip.getPixelColor(i) >> 16) & 0xFF;
-          delay(1);
-          FadeG = (strip.getPixelColor(i) >> 8) & 0xFF;
-          delay(1);
-          FadeB = strip.getPixelColor(i) & 0xFF;
-          delay(1); 
-          FadeR = FadeR-(R/30);
-          if(FadeR < 0) {
-            FadeR = 0;
-          }
-          FadeG = FadeG-(G/30);
-          if(FadeG < 0) {
-            FadeG = 0;
-          }
-          FadeB = FadeB-(B/30);
-          if(FadeB < 0) {
-            FadeB = 0;
-          }
-        }
-        strip.setPixelColor(i, FadeR, FadeG, FadeB);
-      }
-        strip.show();
         PatternSelect();
-        if (P_MODE != p) break;
+        ColorSelect();
         break;
-    case 8: // Rainbow (This will not use the selected colors)
+    case 2: // Fast strobe
+      colorChange(strip.Color(R, G, B));
+      delay(300);
+      PatternSelect();
+      ColorSelect();
+      colorChange(strip.Color(0, 0, 0));
+      delay(300);
+      PatternSelect();
+      ColorSelect();
+      break;
+    case 3: // Tracer
+      if (P_MODE != p) break;
+      colorWipe(strip.Color(0, 0, 0),20);
+      if (P_MODE != p) break;
+      colorWipe(strip.Color(R, G, B),20);
+      break;
+    case 4: // Step Pulsate
+      wait = 50;
+      if (STrigger){
+        wait = 20;
+        STrigger = 0;
+      }
+      FadeCycle(R, G, B, wait);
+      PatternSelect();
+      ColorSelect();
+      break;
+    case 5: // Arc Reactor
+          ran = random(40);
+      if(ran>20){ 
+        if(FadeR<=(R-2))FadeR += 2;
+        if(FadeG<=(G-2))FadeG += 2;
+        if(FadeB<=(B-2))FadeB += 2;
+
+      } else {  // Fade down
+          if(FadeR>=20)FadeR -= 2;
+          if(FadeG>=20)FadeG -= 2;
+          if(FadeB>=20)FadeB -= 2;
+      }
+      //if(FadeR>=0 && FadeG>=0 && FadeB>=0 && FadeR<=R && FadeG<=G && FadeB<=B)
+      colorChange(strip.Color(FadeR, FadeG, FadeB));
+      delay(10);
+      PatternSelect();
+      ColorSelect();
+           break;
+    case 6: // Pulsate
+      wait = 20;
+      if (STrigger){
+        FadeCycle(R, G, B, wait);
+        STrigger = 0;
+      }
+      PatternSelect();
+      ColorSelect();
+      break;
+    case 7: // Arc Reactor movment fade
+          ran = random(40);
+      if (STrigger){
+//        colorChange(strip.Color(R, G, B));
+        if(FadeR<=(R-10))FadeR += 10;
+        if(FadeG<=(G-10))FadeG += 10;
+        if(FadeB<=(B-10))FadeB += 10;
+               STrigger = 0;
+       //ran = 30;
+      }
+//      FadeR = strip.getR(0);
+//      FadeG = strip.getG(0);
+//      FadeB = strip.getB(0);
+      if(ran>20){ 
+        if(FadeR<=(R-2))FadeR += 2;
+        if(FadeG<=(G-2))FadeG += 2;
+        if(FadeB<=(B-2))FadeB += 2;
+
+      } else {  // Fade down
+          if(FadeR>=20)FadeR -= 2;
+          if(FadeG>=20)FadeG -= 2;
+          if(FadeB>=20)FadeB -= 2;
+      }
+      //if(FadeR>=0 && FadeG>=0 && FadeB>=0 && FadeR<=R && FadeG<=G && FadeB<=B)
+      colorChange(strip.Color(FadeR, FadeG, FadeB));
+      delay(10);
+      PatternSelect();
+      ColorSelect();
+           break;
+   case 8: // Sparkle
+      if (STrigger){
+        colorChange(strip.Color(R, G, B));
+          STrigger = 0;
+      }
+      // Sparkle(TwinkleLikelyhood, StepsToTake, LowerBrightness, UpperBrightness)
+      Sparkle(100, 20, 0, 1); 
+      PatternSelect();
+      ColorSelect();
+           break;
+case 9: // Rainbow (This will not use the selected colors)
         uint16_t j;
+        uint16_t i;
         for(j=0; j<256; j++) {
-          for(i=0; i<LEDs; i++) {
-            strip.setPixelColor(i, Wheel(((i * 256 / LEDs) +j) & 255));
+          for(i=0; i<80; i++) {
+            strip.setPixelColor(i, Wheel(((i * 256 / 255) +j) & 255));
           }
           strip.show();
           PatternSelect();
-          if (P_MODE != p) break;
           delay(20);
+          if (P_MODE != p) break;
         }
       break;
-  case 9: // Color Pulsate
-      wait = 100;
+   case 10: // Rave Mode
+      wait = 50;
       if (STrigger){
-        C_MODE += 1;
-        if (C_MODE > 10)C_MODE = 1;
-        colorMode(C_MODE);
+        ran = random(8);
+        if(C_MODE==ran){
+          ran++;
+          if(ran>8)ran=1;
+        }
+        colorMode(ran);
         wait = 20;
+        STrigger = 0;
       }
-      for(i=0; i<7; i++) {
-        strip.setBrightness(0+((Lux/7)*i));
-        colorChange(strip.Color(R, G, B));
-        delay(wait);
-      }
+      FadeCycle(R, G, B, wait);
+      PatternSelect();
+      ColorSelect();
+      break;  
+    case 11: // Rave Sparkle
       if (STrigger){
-        C_MODE += 1;
-        if (C_MODE > 10)C_MODE = 1;
-        colorMode(C_MODE);
-        wait = 20;
-      }
-      for(i=0; i<7; i++) {
-        strip.setBrightness(Lux-((Lux/7)*i));
+              ran = random(8);
+        if(C_MODE==ran){
+          ran++;
+          if(ran>8)ran=1;
+        }
+        colorMode(ran);
         colorChange(strip.Color(R, G, B));
-        delay(wait);
+        wait = 50;
+          STrigger = 0;
       }
-      break;  
-  case 10: // red/white
-      wait = 100;
-      //colorMode(1);
-      for(i=0; i<7; i++) {
-        strip.setBrightness(0+((Lux/7)*i));
+      // Sparkle(TwinkleLikelyhood, StepsToTake, LowerBrightness, UpperBrightness)
+      Sparkle(100, 20, 0, 1); 
+      PatternSelect();
+      ColorSelect();
+           break; 
+case 12: // Rave Sparkle
+      if (STrigger){
         colorChange(strip.Color(R, G, B));
-        delay(wait);
+        wait = 1000;
+          STrigger = 0;
       }
-      for(i=0; i<7; i++) {
-        strip.setBrightness(Lux-((Lux/7)*i));
-        colorChange(strip.Color(R, G, B));
-        delay(wait);
+      // Sparkle(TwinkleLikelyhood, StepsToTake, LowerBrightness, UpperBrightness)
+      ran = random(8);
+        if(C_MODE==ran){
+          ran++;
+          if(ran>8)ran=1;
+        }
+        colorMode(ran);
+      Sparkle(100, 20, 0, 1); 
+      PatternSelect();
+      ColorSelect();
+           break; 
+  case 13: // Light saber mode
+    wait = 30;
+        PatternSelect();
+    delay(5);
+    if(STrigger){
+      for(uint16_t i=LEDs; i>0; i--) {
+         strip.setPixelColor(i, strip.Color(0, 0, 0));
+         strip.show();
+         PatternSelect();
+         //if (P_MODE != p) break;
+         delay(wait);
       }
-      for(i=0; i<7; i++) {
-        strip.setBrightness(0+((Lux/7)*i));
-        colorChange(strip.Color(33, 33, 33));
+      for(uint16_t i=0; i<LEDs; i++) {
+        strip.setPixelColor(i, strip.Color(R, G, B));
+        strip.show();
+        PatternSelect();
+        //if (P_MODE != p) break;
         delay(wait);
-      }
-      for(i=0; i<7; i++) {
-        strip.setBrightness(Lux-((Lux/7)*i));
-        colorChange(strip.Color(33, 33, 33));
-        delay(wait);
-      }
-      break;  
-  }
+      } 
+    }
+    STrigger = 0;
+      break;
+}
 }
 
 // Fill the dots one after the other with a color
@@ -376,22 +355,84 @@ void colorChange(uint32_t c) {
 }
 
 // Fill the dots one after the other with a color
-void colorWipe(uint32_t c) {
+void colorWipe(uint32_t c, uint16_t w) {
   for(uint16_t i=0; i<LEDs; i++) {
+      if (STrigger){ 
+          w = w/2;
+          STrigger = 0;
+      }
       strip.setPixelColor(i, c);
       strip.show();
-      
-      delay(50);
+      PatternSelect();
+      ColorSelect();
+      delay(w);
   }
 }
-
-// Fill the dots one after the other with a color
-void Sparkle(uint32_t c) {
-  for(uint16_t i=0; i<LEDs; i++) {
-      strip.setPixelColor(i, c);
-      strip.show();
-      delay(50);
+void FadeUp(uint16_t r, uint16_t g, uint16_t b, uint16_t s){
+  // r = Red Value
+  // G = Green Value
+  // B = Blue Value
+  // s = the number of steps to the bace color
+  for(uint16_t i=0; i<s; i++) {
+    FadeR = 0+((r/s)*i);
+    FadeG = 0+((g/s)*i);
+    FadeB = 0+((b/s)*i);
+    colorChange(strip.Color(FadeR, FadeG, FadeB));
+    PatternSelect();
+    ColorSelect();
+    delay(10);
   }
+}
+void FadeDown(uint16_t r, uint16_t g, uint16_t b, uint16_t s){
+  // r = Red Value
+  // G = Green Value
+  // B = Blue Value
+  // s = the number of steps to the bace color
+  for(uint16_t i=0; i<s; i++) {
+    FadeR = r-((r/s)*i);
+    FadeG = g-((g/s)*i);
+    FadeB = b-((b/s)*i);
+    colorChange(strip.Color(FadeR, FadeG, FadeB));
+    PatternSelect();
+    ColorSelect();
+    delay(10);
+  }
+}
+void FadeCycle(uint16_t r, uint16_t g, uint16_t b, uint16_t s){
+  // r = Red Value
+  // G = Green Value
+  // B = Blue Value
+  // s = the number of steps to the bace color
+  FadeUp(r, g, b, s);
+  FadeDown(r, g, b, s);
+}
+
+void Sparkle(uint16_t t, uint16_t s, uint16_t l, uint16_t d){
+  // t = How likly is it that a light will Twinkle (0 - 3000)
+  // s = the number of steps to the bace color
+  // l = the lowest number to reach
+  // d = Devide the origonal color value by x. This can be used to temporarily start with a dimmer color.
+  for(uint16_t i=0; i<Pixels; i++) {
+    if (random(3000) < t) {
+      FadeR = R/d;
+      FadeG = G/d;
+      FadeB = B/d;
+    } else {  
+      //l=l-Lux;
+      FadeR = strip.getR(i)-(R/s);
+      FadeG = strip.getG(i)-(G/s);
+      FadeB = strip.getB(i)-(B/s);
+      if(FadeR < 0) FadeR = 0;
+      if(FadeG < 0) FadeG = 0;
+      if(FadeB < 0) FadeB = 0;
+      if(FadeR < l && R>0) FadeR = l;
+      if(FadeG < l && G>0) FadeG = l;
+      if(FadeB < l && B>0) FadeB = l;
+    }
+    strip.setPixelColor(i, FadeR, FadeG, FadeB);
+  }
+    strip.show();
+    delay(waitRel); 
 }
 
 // Input a value 0 to 255 to get a color value.
@@ -409,7 +450,69 @@ uint32_t Wheel(byte WheelPos) {
   }
 }
 
-
+void ColorSelect(){
+  while (digitalRead(C_BUTTON) == LOW) {
+    if(jump){
+      colorChange(strip.Color(R/4, G/4, B/4));
+      while (digitalRead(P_BUTTON) == LOW) {
+        delay(500);
+        C_MODE += 1;
+        if (C_MODE > Cn) {
+          C_MODE = 1; 
+        }
+        colorMode(C_MODE);
+        //strip.setBrightness(Lux/2);
+        colorChange(strip.Color(R, G, B));
+        strip.setBrightness(Lux);
+      }
+      EEPROM.update(2, C_MODE);
+    } else {
+        delay(500);
+        C_MODE += 1;
+        if (C_MODE > Cn) {
+          C_MODE = 1; 
+        }
+        colorMode(C_MODE);
+        colorChange(strip.Color(R, G, B));
+        strip.setBrightness(Lux);
+    }
+    if (digitalRead(C_BUTTON) == HIGH) EEPROM.update(2, C_MODE);
+  }
+  
+} 
+void PatternSelect(){
+  while(digitalRead(P_BUTTON) == LOW) {
+    if(jump){
+      strip.setBrightness(Lux);
+      while(digitalRead(C_BUTTON) == LOW) {
+        strip.setBrightness(Lux);
+        delay(500);
+        P_MODE += 1;
+        if (P_MODE > Pn) {
+          P_MODE = 1; 
+        }
+        colorChange(strip.Color(120, 120, 120));
+        delay(250);
+        colorChange(strip.Color(0, 0, 0));
+        patternMode(P_MODE);
+      }
+      EEPROM.update(3, P_MODE);
+    }else{
+        strip.setBrightness(Lux);
+        delay(500);
+        P_MODE += 1;
+        if (P_MODE > Pn) {
+          P_MODE = 1; 
+        }
+        colorChange(strip.Color(120, 120, 120));
+        delay(250);
+        colorChange(strip.Color(0, 0, 0));
+        patternMode(P_MODE);
+    }
+     if (digitalRead(P_BUTTON) == HIGH) EEPROM.update(3, P_MODE);
+  }
+ 
+} 
 // Set the number of LEDs that will be used
 void LEDSsetup(int l) {
   uint16_t t=0;
@@ -420,7 +523,7 @@ void LEDSsetup(int l) {
         LEDs += 1;
         t=0;
     } 
-    if (digitalRead(P_BUTTON) == LOW && LEDs > 0) {
+    if (digitalRead(P_BUTTON) == LOW && LEDs > 1) {
       delay(250);
       LEDs -= 1;
       t=0;
@@ -439,20 +542,19 @@ void LEDSsetup(int l) {
     }
   }
 }
-
 // Set the number of LEDs that will be used
 void LUXsetup(int l) {
   uint16_t t=0;
   while(l){
     t++;
-    if (digitalRead(P_BUTTON) == LOW && Lux < 240) {
+    if (digitalRead(P_BUTTON) == LOW && Lux < 239) {
         delay(250);
-        Lux += 15;
+        Lux += 5;
         t=0;
     } 
-    if (digitalRead(C_BUTTON) == LOW && Lux > 15) {
+    if (digitalRead(C_BUTTON) == LOW && Lux > 19) {
       delay(250);
-      Lux -= 15;
+      Lux -= 5;
       t=0;
     } 
     strip.setBrightness(Lux);
